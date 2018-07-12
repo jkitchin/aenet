@@ -363,8 +363,11 @@ program train
   conv = .false.
   epochs : do iepoch = 1, inp%trn_steps
 
-     if (conv) then
+     if (conv .or. (MAE_tst/ts_trn%scale <= inp%trn_energy_mae_target)) then
         if (ppMaster) then
+           if (MAE_tst/ts_trn%scale .le. inp%trn_energy_mae_target) then
+              write(*,*) 'MAE ', MAE_tst, ' target of ', inp%trn_energy_mae_target, ' met.'
+           end if
            write(*,*) 'The optimization has converged. Training stopped.'
            write(*,*)
         end if

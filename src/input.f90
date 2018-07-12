@@ -94,6 +94,8 @@ module input
      ! trn_param(i)     i-th parameter of the training algorithm       !
      ! do_save_energies if .true. save testing and training energies   !
      !                  of all structures in the reference data set    !
+     ! trn_energy_mae_target if mae is less than or equal to this stop !
+     !                  the training.
      !                                                                 !
      !--------------------- structural relaxation ---------------------!
      ! do_relax         .true. if structural relaxation requested      !
@@ -159,6 +161,7 @@ module input
      integer                                             :: trn_nparams
      double precision,       dimension(:),   allocatable :: trn_param
      logical                                             :: do_save_energies
+     double precision                                    :: trn_energy_mae_target
 
      character(len=PATHLEN), dimension(:),   allocatable :: setupFile
 
@@ -230,6 +233,7 @@ contains
     inp%trn_maxenergy    = huge(1.0d0)
     inp%trn_nparams      = 0
     inp%do_save_energies = .false.
+    inp%trn_energy_mae_target = 0.0d0
 
     inp%T            = 0.0d0
     inp%T_final      = 0.0d0
@@ -324,6 +328,7 @@ contains
     call inp_read_value(u, 'timing',        inp%do_timing)
     call inp_read_value(u, 'debug',         inp%do_debug)
     call inp_read_value(u, 'save_energies', inp%do_save_energies)
+    call inp_read_value(u, 'energy_mae_target', inp%trn_energy_mae_target)
     call inp_read_verbosity(inp, u)
 
     close(u)
