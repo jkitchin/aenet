@@ -429,6 +429,10 @@ contains !-------------------------------------------------------------!
           fname = 'scaled hyperbolic tangent (mtanh)'
        case(4)
           fname = 'scaled hyperbolic tangent + linear twisting (twist)'
+       case(5)
+          fname = 'rectified linear unit (relu)'
+       case(6)
+          fname = 'sigmoid-weighted linear unit (swish)'
        end select
        write(*,'(5x,I3," : ",I5,2x,A)') ilayer, net%nnodes(ilayer), trim(fname)
     end do
@@ -896,6 +900,10 @@ contains !-------------------------------------------------------------!
        net%f_a(ilayer) = 3
     case('twist','w')
        net%f_a(ilayer) = 4
+    case('relu', 'r')
+       net%f_a(ilayer) = 5
+    case('swish', 'h')
+       net%f_a(ilayer) = 6
     case default
        write(0,*) "Error: invalid function type in `change_activation': ", &
                   trim(ftype)
@@ -913,7 +921,9 @@ contains !-------------------------------------------------------------!
   !   1 : hyperbolic tangent, y in [-1:1]                              !
   !   2 : sigmoid,            y in [ 0:1]                              !
   !   3 : modified tanh,      y in [-1.7159:1.7159]  f(+/-1) = +/-1    !
-  !   4 : tanh & linear twisting term                                  !
+  !   4 : tanh & linear twisting term
+  !   5 : relu
+  !   6 : swish
   ! [3 & 4 Montavon, Orr, Müller Neural Networks: Tricks of the Trade] !
   !                                                                    !
   !--------------------------------------------------------------------!
@@ -931,7 +941,7 @@ contains !-------------------------------------------------------------!
     double precision, intent(out) :: y
     double precision, intent(out) :: dy
 
-    double precision :: tanhbx
+    double precision :: tanhbx, sigmoid
     double precision, parameter :: a = 1.7159d0
     double precision, parameter :: b = 0.666666666666667d0
     double precision, parameter :: c = 0.1d0
@@ -954,6 +964,21 @@ contains !-------------------------------------------------------------!
        tanhbx = tanh(b*x)
        y  = a*tanhbx + c*x
        dy = a*(1.0d0 - tanhbx*tanhbx)*b + c
+    case(5)
+       if (x < 0) then
+          y = 0.0d0
+          dy = 0.0d0
+       else
+          y = x
+          dy = 1.0d0
+       end if
+    case(6)
+       ! https://arxiv.org/pdf/1702.03118.pdf
+       ! https://arxiv.org/abs/1710.05941
+       ! swish: y = x * sigmoid(x)
+       sigmoid = 1.0d0/(1.0d0 + exp(-x))
+       y = x * sigmoid
+       dy = y + sigmoid * (1.0d0 - y)
     case default
        y  = 0.0d0
        dy = 0.0d0
