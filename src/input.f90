@@ -95,8 +95,11 @@ module input
      ! do_save_energies if .true. save testing and training energies   !
      !                  of all structures in the reference data set    !
      ! trn_energy_mae_target if mae is less than or equal to this stop !
-     !                  the training.
-     !                                                                 !
+     !                  the training.                                  !
+     ! trn_L1_lambda    hyperparameter for L1 regularization of        !
+     !                  weights                                        !
+     ! trn_L2_lambda    hyperparameter for L2 regularization of        !
+     !                  weights                                        !
      !--------------------- structural relaxation ---------------------!
      ! do_relax         .true. if structural relaxation requested      !
      ! relax_method     name of the optimization algorithm             !
@@ -162,6 +165,7 @@ module input
      double precision,       dimension(:),   allocatable :: trn_param
      logical                                             :: do_save_energies
      double precision                                    :: trn_energy_mae_target
+     double precision                                    :: trn_L1_lambda, trn_L2_lambda
 
      character(len=PATHLEN), dimension(:),   allocatable :: setupFile
 
@@ -234,6 +238,8 @@ contains
     inp%trn_nparams      = 0
     inp%do_save_energies = .false.
     inp%trn_energy_mae_target = 0.0d0
+    inp%trn_L1_lambda = 0.0d0
+    inp%trn_L2_lambda = 0.0d0
 
     inp%T            = 0.0d0
     inp%T_final      = 0.0d0
@@ -329,6 +335,8 @@ contains
     call inp_read_value(u, 'debug',         inp%do_debug)
     call inp_read_value(u, 'save_energies', inp%do_save_energies)
     call inp_read_value(u, 'energy_mae_target', inp%trn_energy_mae_target)
+    call inp_read_value(u, 'l1_lambda', inp%trn_L1_lambda)
+    call inp_read_value(u, 'l2_lambda', inp%trn_L2_lambda)
     call inp_read_verbosity(inp, u)
 
     close(u)
