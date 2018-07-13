@@ -24,7 +24,7 @@ TLSBIN   = ../tools/
 TOOL1    = $(TLSBIN)trnset2ASCII.x
 TOOL2    = $(TLSBIN)neighbors.x
 TOOL3    = $(TLSBIN)fingerprint.x
-TOOLS    = $(TOOL1) $(TOOL2) $(TOOL3)
+TOOLS    = $(TOOL1) $(TOOL2) $(TOOL3) $(TLSBIN)printnns.x
 
 #------------------------------- rules --------------------------------#
 
