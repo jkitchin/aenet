@@ -230,6 +230,10 @@ program train
 
   integer                                          :: irec, isample
 
+  integer                                          :: ilayer, istart, iend
+
+  double precision                                 :: last_tst_mae
+  character                                        :: direction
   ! timing registers
   integer, parameter :: R_TRN = 1, R_TST = 2
 
@@ -364,7 +368,7 @@ program train
        call tng_timing('Initial energies evaluated (before training)')
 
   !----------------------------- training -----------------------------!
-
+  last_tst_mae = huge(1.0d0)  ! initialize to a large number.
   conv = .false.
   epochs : do iepoch = 1, inp%trn_steps
 
@@ -501,9 +505,21 @@ program train
      if (ppMaster) then
         RMSE_trn = sqrt(2.0d0*SSE_trn/dble(nTrain))
         RMSE_tst = sqrt(2.0d0*SSE_tst/dble(nTest))
+
+        if (MAE_tst/ts_trn%scale .lt. last_tst_mae) then
+           direction = "v"
+        else if (MAE_tst/ts_trn%scale .eq. last_tst_mae) then
+           direction = "-"
+        else
+           direction = "^"
+        end if
+
+        last_tst_mae = MAE_tst/ts_trn%scale
+
         call print_energies(iepoch, &
              MAE_trn/ts_trn%scale, RMSE_trn/ts_trn%scale, &
-             MAE_tst/ts_trn%scale, RMSE_tst/ts_tst%scale  )
+             MAE_tst/ts_trn%scale, RMSE_tst/ts_tst%scale, &
+             direction)
         call save_all_networks(iter=iepoch)
      end if
 
@@ -1265,14 +1281,14 @@ contains !=============================================================!
     write(*,'(8x,A30,2x,A30)') &
          '|------------TRAIN-----------|', &
          '|------------TEST------------|'
-    write(*,'(1x,A5,2x,A14,2x,A14,2x,A14,2x,A14)') &
-         'epoch', 'MAE', '<RMSE>', 'MAE', '<RMSE>'
+    write(*,'(1x,A5,2x,A14,2x,A14,2x,A14,2x,A14,2x,A14)') &
+         'epoch', 'MAE', '<RMSE>', 'MAE', '<RMSE>', 'direction'
 
   end subroutine print_training_header
 
   !------------------ energies at current iteration -------------------!
 
-  subroutine print_energies(istep, MAE_trn, RMSE_trn, MAE_tst, RMSE_tst)
+  subroutine print_energies(istep, MAE_trn, RMSE_trn, MAE_tst, RMSE_tst, direction)
 
     implicit none
 
@@ -1281,9 +1297,10 @@ contains !=============================================================!
     double precision, intent(in) :: RMSE_trn
     double precision, intent(in) :: MAE_tst
     double precision, intent(in) :: RMSE_tst
+    character, optional, intent(in)        :: direction
 
-    write(*,'(1x,I5,2x,ES14.6,2x,ES14.6,2x,ES14.6,2x,ES14.6," <")') &
-          istep, MAE_trn, RMSE_trn, MAE_tst, RMSE_tst
+    write(*,'(1x,I5,2x,ES14.6,2x,ES14.6,2x,ES14.6,2x,ES14.6," ",A)') &
+          istep, MAE_trn, RMSE_trn, MAE_tst, RMSE_tst, direction
 
   end subroutine print_energies
 
