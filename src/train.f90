@@ -538,7 +538,9 @@ program train
            open(unit=10, file='train-convergence.csv', action='write',position='append')
         end if
 
-        call save_all_networks(iter=iepoch)
+        if (mod(iepoch, inp%trn_checkpoint_interval) .eq. 0) then
+           call save_all_networks(iter=iepoch)
+        end if
      end if
 
      ! synchronize networks (to avoid numerical problems)
