@@ -209,6 +209,7 @@ program train
 
   type(Network),     dimension(:),     allocatable :: net
   integer                                          :: nnodes_max
+  integer                                          :: nw, itype, ntypes
   integer                                          :: nw_max
   integer                                          :: nw_tot
   double precision,  dimension(:,:),   allocatable :: Dw
@@ -280,6 +281,10 @@ program train
   allocate(ann_values(nnodes_max), &
            ann_derivs(nnodes_max), &
            ann_jacobian(nw_max))
+
+  write(*,*) "L1 regularization of NN weights: ", inp%trn_L1_lambda
+  write(*,*) "L2 regularization of NN weights: ", inp%trn_L2_lambda
+  write(*,*)
 
   if (inp%do_timing .and. ppMaster) then
      u_tng = io_unit()
@@ -414,6 +419,48 @@ program train
            call opt_after_sample(net, ts, dE, Dw)
 
         end do training
+
+        ! L1 regularization
+        ! https://jamesmccaffrey.wordpress.com/2017/06/27/implementing-neural-network-l1-regularization/
+        if (inp%trn_L1_lambda .gt. 0.0d0) then
+           ntypes = size(net(:))
+           ! loop over each network
+           do itype = 1, ntypes
+              ! we start at the second layer, the first layer is the input
+              do ilayer = 2, net(itype)%nlayers
+                 ! the start is 1 after the last value of the previous layer
+                 istart = net(itype)%iw(ilayer - 1) + 1
+
+                 ! the end is the index of last value in the current layer -
+                 ! #biases, which is equal to the number of nodes in the layer.
+                 iend = net(itype)%iw(ilayer) - net(itype)%nnodes(ilayer)
+
+                 net(itype)%W(istart:iend) = net(itype)%W(istart:iend) &
+                      + inp%trn_L1_lambda * sign(net(itype)%W(istart:iend), -net(itype)%W(istart:iend))
+              end do
+           end do
+        end if
+
+        ! L2 regularization
+        ! https://jamesmccaffrey.wordpress.com/2017/06/29/implementing-neural-network-l2-regularization/
+        if (inp%trn_L1_lambda .gt. 0.0d0) then
+           ntypes = size(net(:))
+           ! loop over each network
+           do itype = 1, ntypes
+              ! we start at the second layer, the first layer is the input
+              do ilayer = 2, net(itype)%nlayers
+                 ! the start is 1 after the last value of the previous layer
+                 istart = net(itype)%iw(ilayer - 1) + 1
+
+                 ! the end is the index of last value in the current layer -
+                 ! #biases, which is equal to the number of nodes in the layer.
+                 iend = net(itype)%iw(ilayer) - net(itype)%nnodes(ilayer)
+
+                 net(itype)%W(istart:iend) = net(itype)%W(istart:iend) &
+                      - inp%trn_L2_lambda * net(itype)%W(istart:iend)
+              end do
+           end do
+        end if
 
         call opt_after_batch(net, ts, do_deriv, do_nextbatch, conv)
 
