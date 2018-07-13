@@ -368,6 +368,10 @@ program train
        call tng_timing('Initial energies evaluated (before training)')
 
   !----------------------------- training -----------------------------!
+  open(unit=10, file='train-convergence.csv', status='unknown')
+  write(10,'(A)') &
+       'epoch,train-MAE,train-<RMSE>,test-MAE,test-<RMSE>,direction'
+
   last_tst_mae = huge(1.0d0)  ! initialize to a large number.
   conv = .false.
   epochs : do iepoch = 1, inp%trn_steps
@@ -520,6 +524,20 @@ program train
              MAE_trn/ts_trn%scale, RMSE_trn/ts_trn%scale, &
              MAE_tst/ts_trn%scale, RMSE_tst/ts_tst%scale, &
              direction)
+
+        ! Write out to file.
+        write(10,'(I5,", ", ES14.6, ", ",ES14.6, ", ", ES14.6, ", ", ES14.6,", ",A)') &
+             iepoch, &
+             MAE_trn/ts_trn%scale, RMSE_trn/ts_trn%scale, &
+             MAE_tst/ts_trn%scale, RMSE_tst/ts_tst%scale, &
+             direction
+
+        ! Flush every 10 steps
+        if (mod(iepoch, 10) .eq. 0) then
+           close(unit=10)
+           open(unit=10, file='train-convergence.csv', action='write',position='append')
+        end if
+
         call save_all_networks(iter=iepoch)
      end if
 
