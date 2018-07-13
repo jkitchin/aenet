@@ -25,3 +25,6 @@ clean :
 	rm -f *.o
 	for f in *.mod; do rm -f $$f; done
 	for f in *~; do rm -f $$f; done
+
+tags:
+	etags `find . -name "*.f90"`
