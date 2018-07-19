@@ -1,0 +1,146 @@
+
+
+#+BEGIN_SRC sh
+git remote add upstream https://github.com/atomisticnet/aenet
+#+END_SRC
+
+* Repo organization
+
+** master
+
+This branch should be kept in sync with upstream. This is also the branch to make feature branches from so it is easy to create pull-requests.
+
+Sync with upstream.
+
+#+BEGIN_SRC sh
+git checkout master
+git fetch upstream
+git merge upstream/master
+git push
+#+END_SRC
+
+** local
+
+ This is my working branch.
+
+[[/usr/local/google/home/kitchin/vc/journal/2017/10/04/2017-10-04.org]]
+
+
+* Python aenet
+
+#+BEGIN_SRC python
+from aenet.ase_calculator import ANNCalculator
+from ase import Atoms
+
+root = '/usr/local/google/home/kitchin/Desktop/aenet/examples/behler-parinello-1/'
+potentials = {'Ti': root + 'Ti.10tw-10tw.ann',
+                      'O': root + 'O.10tw-10tw.ann'}
+
+calc = ANNCalculator(potentials)
+
+positions=[(  0.42651082,  2.82851745, 1.22027956),
+                   (  1.76480257, -0.94296447, 3.66083922),
+                   (  0.14225662,  0.94278546, 0.79509432),
+                   (  2.04905661,  0.94276737, 4.08602446),
+                   ( -0.14223328, -0.94276538, 3.23565398),
+                   (  2.33354646,  2.82831821, 1.64546480)]
+
+cell=[( 3.81382872,  0.00000000, 0.00000000),
+              ( 0.56886601,  3.77116440, 0.00000000),
+              (-2.19138173, -1.88561177, 4.88111931)]
+
+atoms = Atoms('Ti2O4', positions=positions, cell=cell,
+                               pbc=[True, True, True])
+atoms.set_calculator(calc)
+print(atoms.get_potential_energy())
+print(atoms.get_forces())
+#+END_SRC
+
+#+RESULTS:
+: -4989.741092556584
+: [[ 1.63053889e-03 -1.89629481e-03  1.12388952e-07]
+:  [-1.63261166e-03  1.89466240e-03 -1.11750524e-07]
+:  [-3.10744427e-04  6.92044342e-04 -1.19760208e-01]
+:  [ 3.11452316e-04 -6.91056141e-04  1.19760208e-01]
+:  [ 6.37937902e-04 -4.10262925e-04 -1.19760246e-01]
+:  [-6.36573018e-04  4.10907132e-04  1.19760246e-01]]
+
+
+#+BEGIN_SRC python
+from aenet.ase_calculator import ANNCalculator
+from ase import Atoms
+
+root = '/usr/local/google/home/kitchin/Desktop/aenet/examples/chebyshev-1/'
+potentials = {'Ti': root + 'Ti.15t-15t.nn',
+                      'O': root + 'O.15t-15t.nn'}
+
+calc = ANNCalculator(potentials)
+
+positions=[(  0.42651082,  2.82851745, 1.22027956),
+                   (  1.76480257, -0.94296447, 3.66083922),
+                   (  0.14225662,  0.94278546, 0.79509432),
+                   (  2.04905661,  0.94276737, 4.08602446),
+                   ( -0.14223328, -0.94276538, 3.23565398),
+                   (  2.33354646,  2.82831821, 1.64546480)]
+
+cell=[( 3.81382872,  0.00000000, 0.00000000),
+              ( 0.56886601,  3.77116440, 0.00000000),
+              (-2.19138173, -1.88561177, 4.88111931)]
+
+atoms = Atoms('Ti2O4', positions=positions, cell=cell,
+                               pbc=[True, True, True])
+atoms.set_calculator(calc)
+print(atoms.get_potential_energy())
+print(atoms.get_forces())
+#+END_SRC
+
+#+RESULTS:
+: -4990.310783539421
+: [[ 7.00516368e-04 -8.15551171e-04  7.72182442e-08]
+:  [-7.02511731e-04  8.14025395e-04 -7.65918542e-08]
+:  [ 1.32793813e-05  6.62670397e-04 -7.21054563e-02]
+:  [-1.29295916e-05 -6.61360730e-04  7.21054560e-02]
+:  [ 6.57249980e-04 -8.55082447e-05 -7.21055046e-02]
+:  [-6.55604406e-04  8.57243538e-05  7.21055043e-02]]
+
+
+
+* build serial
+#+BEGIN_SRC sh :results code
+cd src/
+make -f makefiles/Makefile.gfortran_serial lib
+cd ../python
+python setup.py build_ext --inplace
+#+END_SRC
+
+#+BEGIN_SRC sh
+ls bin
+#+END_SRC
+
+#+RESULTS:
+| generate.x-2.0.2-gfortran_serial |
+| generate.x-2.0.3-gfortran_mpi    |
+| generate.x-2.0.3-gfortran_serial |
+| plotconvergence.py               |
+| predict.x-2.0.2-gfortran_serial  |
+| predict.x-2.0.3-gfortran_mpi     |
+| predict.x-2.0.3-gfortran_serial  |
+| train.x-2.0.2-gfortran_serial    |
+| train.x-2.0.3-gfortran_mpi       |
+| train.x-2.0.3-gfortran_serial    |
+
+* build parallel
+
+
+* Building documentation
+
+I was inspired by ford:
+https://github.com/cmacmackin/ford
+
+https://github.com/cmacmackin/ford/wiki
+
+This command will build the docuementation
+
+#+BEGIN_SRC sh
+ford aenet.md
+#+END_SRC

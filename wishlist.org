@@ -1,0 +1,64 @@
+* DONE Regularization options
+  CLOSED: [2018-07-13 Fri 13:12]
+
+I would like l1 and l2 norm on the network weights.
+
+in train.in, these would be set by:
+
+l1_regularization lambda1
+l2_regularization lambda2
+
+They would update the weights with:
+
+dw = - lambda1 * sum(abs(weights))
+
+Here is a simple implementation that does not require a gradiaent
+l1: https://jamesmccaffrey.wordpress.com/2017/06/27/implementing-neural-network-l1-regularization/
+
+for-each weight
+  weight = weight + (sgn(weight) * lambda)  # L1
+  weight = weight + (learnRate * gradient)  # regular
+end-for
+
+Note that in this implementation, the L1_lambda should be very small, i.e. if it is equal to 1, it would just set the weights to zero.
+
+
+l2 has a similarly simple implementation: https://jamesmccaffrey.wordpress.com/2017/06/29/implementing-neural-network-l2-regularization/
+for-each weight
+  weight -= lambda * weight # toward 0
+  weight += learnRate * gradient # regular
+end-for
+
+
+
+I have put an implementation of this on the regularization branch.
+
+
+
+* Better analysis tools
+
+I wish much more data was dumped to python readable files.
+
+
+- [X] print the NN [[./src/tools/printnns.f90]]
+- [X] write convergence data and plot [[file:bin/plotconvergence.py][file:~/src/aenet/bin/plotconvergence.py]]
+
+
+I have added a lot of other stuff to the python3 branch I think.
+
+- [ ] parity, error plots
+
+* command line tool
+
+It might be nice to have a python command with sub-commands to drive aenet.
+
+something like this:
+
+aenet generate
+aenet train
+
+aenet plot convergence
+aenet plot parity
+aenet plot error
+
+aenet print potential-file
