@@ -7,9 +7,8 @@ import sys
 class AENET(object):
 
     def __init__(self):
-        parser = argparse.ArgumentParser(
-            description='aenet command launcher',
-            usage='''aenet <command> [<args>]''')
+        parser = argparse.ArgumentParser(description='aenet command launcher',
+                                         usage='''aenet <command> [<args>]''')
         parser.add_argument('command', help='Subcommand to run')
         # parse_args defaults to [1:] for args, but you need to
         # exclude the rest of the args too, or validation will fail
@@ -22,16 +21,14 @@ class AENET(object):
         getattr(self, args.command)()
 
     def show(self):
-        parser = argparse.ArgumentParser(
-            description='summarize things')
+        parser = argparse.ArgumentParser(description='summarize things')
         args = parser.parse_args(sys.argv[2:])
 
         print(f'Show {args}')
 
 
     def generate(self):
-        parser = argparse.ArgumentParser(
-            description='Run generate.x')
+        parser = argparse.ArgumentParser(description='Run generate.x')
         # prefixing the argument with -- means it's optional
         parser.add_argument('--restart', action='store_true')
         parser.add_argument('--input', action='store_true', default='generate.in')
@@ -42,8 +39,7 @@ class AENET(object):
         print(f'Running generate.x, {args}')
 
     def train(self):
-        parser = argparse.ArgumentParser(
-            description='Run train.x')
+        parser = argparse.ArgumentParser(description='Run train.x')
         # prefixing the argument with -- means it's optional
         parser.add_argument('--restart', action='store_true')
         parser.add_argument('--input', action='store_true', default='train.in')
@@ -54,8 +50,7 @@ class AENET(object):
         print(f'Running train.x, {args}')
 
     def plot(self):
-        parser = argparse.ArgumentParser(
-            description='Plot various quantities')
+        parser = argparse.ArgumentParser(description='Plot various quantities')
         # NOT prefixing the argument with -- means it's not optional
         parser.add_argument('type', help='Type of plotting: parity, errors, convergence')
         parser.add_argument('--output')
