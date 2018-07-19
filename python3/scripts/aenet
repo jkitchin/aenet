@@ -1,7 +1,21 @@
 #!/usr/bin/env python
+"""
+Experimental command tool. Similar to git, there is one command called aenet, with many subcommands for various actvities.
+
+aenet show
+aenet generate
+aenet train
+aenet plot
+
+"""
 
 import argparse
+import shutil
+import os
 import sys
+
+GENERATEX = os.environ.get("AENET_GENERATEX", "generate.x")
+TRAINX =  os.environ.get("AENET_TRAINX", "train.x")
 
 
 class AENET(object):
@@ -26,17 +40,26 @@ class AENET(object):
 
         print(f'Show {args}')
 
+    def tell(self):
+        parser = argparse.ArgumentParser(description='Tell about setup.')
+        print(f'generate.x is at {GENERATEX}. exists = {shutil.which(GENERATEX)}')
+        print(f'train.x is at {TRAINX}. exists = {shutil.which(TRAINX)}')
+
 
     def generate(self):
         parser = argparse.ArgumentParser(description='Run generate.x')
         # prefixing the argument with -- means it's optional
-        parser.add_argument('--restart', action='store_true')
         parser.add_argument('--input', action='store_true', default='generate.in')
         parser.add_argument('--output', action='store_true', default='generate.out')
         # now that we're inside a subcommand, ignore the first
         # TWO argvs, ie the command (aenet) and the subcommand (train)
         args = parser.parse_args(sys.argv[2:])
-        print(f'Running generate.x, {args}')
+
+        if not os.path.exists(args.input):
+            raise FileNotFoundError(f'"{args.input}" does not appear to exist.'
+                                    ' You may want specify the input file with --input fname.')
+
+
 
     def train(self):
         parser = argparse.ArgumentParser(description='Run train.x')
