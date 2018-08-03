@@ -13,6 +13,7 @@ import argparse
 import shutil
 import os
 import sys
+from subprocess import Popen
 
 GENERATEX = os.environ.get("AENET_GENERATEX", "generate.x")
 TRAINX =  os.environ.get("AENET_TRAINX", "train.x")
@@ -34,53 +35,189 @@ class AENET(object):
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)()
 
-    def show(self):
-        parser = argparse.ArgumentParser(description='summarize things')
-        args = parser.parse_args(sys.argv[2:])
-
-        print(f'Show {args}')
 
     def tell(self):
+        """sub-command to describe aenet.
+        It will print diagnostic information about the executables present.
+        """
         parser = argparse.ArgumentParser(description='Tell about setup.')
         print(f'generate.x is at {GENERATEX}. exists = {shutil.which(GENERATEX)}')
         print(f'train.x is at {TRAINX}. exists = {shutil.which(TRAINX)}')
 
 
     def generate(self):
+        '''subcommand to run the generate.x program.'''
         parser = argparse.ArgumentParser(description='Run generate.x')
         # prefixing the argument with -- means it's optional
-        parser.add_argument('--input', action='store_true', default='generate.in')
-        parser.add_argument('--output', action='store_true', default='generate.out')
+        parser.add_argument('--input', action='store_true', default='generate.in',
+                            help='name of the input file, defaults to generate.in')
+        parser.add_argument('--output', action='store_true', default='generate.out',
+                            help='name to store output from stdin to. Defaults to generate.out.')
+        parser.add_argument('--edit', action='store_true',
+                            help='Open the input file in your editor.')
+
         # now that we're inside a subcommand, ignore the first
         # TWO argvs, ie the command (aenet) and the subcommand (train)
         args = parser.parse_args(sys.argv[2:])
+
+        if args.edit:
+            Popen([os.environ.get('EDITOR', 'emacs'), args.input])
+            sys.exit()
 
         if not os.path.exists(args.input):
             raise FileNotFoundError(f'"{args.input}" does not appear to exist.'
                                     ' You may want specify the input file with --input fname.')
 
+        with open(args.input) as f:
+            for line in f:
+                if 'OUTPUT' in line:
+                    trainfile = line.split()[1]
+                    if os.path.exists(trainfile):
+                        os.unlink(trainfile)
+                    break
+
+        with open(args.output, 'w') as f:
+            Popen([GENERATEX, args.input], stdout=f).communicate()
+
+        print(f'generate.x is done. See {args.output}.')
+
 
 
     def train(self):
+        '''subcommand to execute training.'''
         parser = argparse.ArgumentParser(description='Run train.x')
-        # prefixing the argument with -- means it's optional
-        parser.add_argument('--restart', action='store_true')
-        parser.add_argument('--input', action='store_true', default='train.in')
-        parser.add_argument('--output', action='store_true', default='train.out')
+
+        parser.add_argument('--input', action='store_true', default='train.in',
+                            help='Name of input file. Defaults to train.in')
+
+        parser.add_argument('--output', action='store_true', default='train.out',
+                            help='Name of output file to store output in. Defaults to train.out')
+
+        parser.add_argument('--edit', action='store_true',
+                            help='Open the input file in your editor.')
+
+        parser.add_argument('--restart', action='store_true',
+                            help='Delete restart files.')
+
         # now that we're inside a subcommand, ignore the first
         # TWO argvs, ie the command (aenet) and the subcommand (train)
         args = parser.parse_args(sys.argv[2:])
-        print(f'Running train.x, {args}')
+
+        if args.edit:
+            Popen([os.environ.get('EDITOR', 'emacs'), args.input])
+            sys.exit()
+
+        if os.path.exists('STOP'):
+            os.unlink('STOP')
+
+        if args.restart:
+            for f in ['train.restart', 'train.rngstate', 'train.time',
+                      'energies.train.0', 'energies.test.0', 'train-convergence.csv']:
+                if os.path.exists(f):
+                    os.unlink(f)
+            import glob
+            # parsing the nn files out is hard.
+            for f in glob.glob('*.nn*'):
+                os.unlink(f)
+            sys.exit()
+
+
+        with open(args.output, 'w') as f:
+            Popen([TRAINX, args.input], stdout=f)
+
+        print(f'Training is running in the background... Check the output with \ntail -f {args.output}\n')
+
+    def stop(self):
+        "Create a STOP file to stop training."
+        open('STOP', 'w').close()
 
     def plot(self):
+        '''Subcommand to plot quantities.'''
         parser = argparse.ArgumentParser(description='Plot various quantities')
         # NOT prefixing the argument with -- means it's not optional
-        parser.add_argument('type', help='Type of plotting: parity, errors, convergence')
+        parser.add_argument('type', help='Type of plotting: parity, convergence')
         parser.add_argument('--output')
 
         args = parser.parse_args(sys.argv[2:])
 
-        print(f'Plotting {args.type} to {args.output}')
+        import pandas as pd
+        import matplotlib.pyplot as plt
+
+        if args.type == 'convergence':
+            # this file only exists in a patched aenet I wrote.
+            df = pd.read_csv('train-convergence.csv', sep=",")
+
+            plt.subplot(1, 2, 1)
+            plt.plot(df['epoch'], df['train-<RMSE>'])
+            plt.plot(df['epoch'], df['test-<RMSE>'])
+            plt.title('<RMSE> convergence')
+            plt.xlabel('Epoch')
+            plt.ylabel('<RMSE> (eV/atom)')
+            plt.legend(['train', 'test'])
+
+            plt.subplot(1, 2, 2)
+            plt.plot(df['epoch'], df['train-MAE'])
+            plt.plot(df['epoch'], df['test-MAE'])
+            plt.title('<MAE> convergence')
+            plt.xlabel('Epoch')
+            plt.ylabel('<MAE> (eV/atom)')
+            plt.legend(['train', 'test'])
+
+            plt.tight_layout()
+            if args.output:
+                plt.savefig(args.output)
+            plt.show()
+
+        elif args.type == 'parity':
+            train = pd.read_csv('energies.train.0', delim_whitespace=True)
+            test = pd.read_csv('energies.test.0', delim_whitespace=True)
+
+            train_err = (train['Ref(eV)'] - train['ANN(eV)']) / train['#atoms']
+            test_err = (test['Ref(eV)'] - test['ANN(eV)']) / test['#atoms']
+
+            plt.subplot(3, 1, 1)
+            plt.plot(train['Ref(eV)'], train['ANN(eV)'], marker='.', alpha=0.5, linestyle=' ', color='DarkBlue')
+            plt.plot(test['Ref(eV)'], test['ANN(eV)'], marker='.',  alpha=0.5, linestyle=' ', color='Orange')
+            plt.plot([min([test['Ref(eV)'].min(), train['Ref(eV)'].min()]),
+                      max([test['Ref(eV)'].max(), train['Ref(eV)'].max()])],
+                     [min([test['Ref(eV)'].min(), train['Ref(eV)'].min()]),
+                      max([test['Ref(eV)'].max(), train['Ref(eV)'].max()])],
+                     'k-')
+            plt.legend(['train', 'test'])
+            plt.xlabel('Energy (eV)')
+            plt.ylabel('ANN (eV)')
+
+            plt.subplot(3, 1, 2)
+            plt.hist(train_err)
+            plt.hist(test_err)
+            plt.xlabel('ΔE (eV/atom)')
+            plt.title(f"MAE train: {train_err.abs().mean():1.3f} Std: {train_err.std():1.3f}"
+                      f"\nMAE test: {test_err.abs().mean():1.3f} Std: {test_err.std():1.3f}")
+            plt.legend(['train', 'test'])
+
+
+            plt.subplot(3, 1, 3)
+            plt.plot(train['Ref(eV)'], train_err, marker='.', alpha=0.5,
+                     linestyle=' ', color='DarkBlue')
+            plt.plot(test['Ref(eV)'], test_err, marker='.', alpha=0.5,
+                     linestyle=' ', color='Orange')
+
+            test_mae = test_err.abs().mean()
+            #plt.title(f'test MAE = {test_mae:1.4f} eV')
+            plt.axhline(y=test_mae, linestyle='--', color='k')
+            plt.legend(['train', 'test'])
+            plt.xlabel('Energy (eV)')
+            plt.ylabel('Error')
+            plt.tight_layout()
+            if args.output:
+                plt.savefig(args.output)
+
+            plt.show()
+        else:
+            print(f'{args.type} is not supported yet.')
+
+
+
 
 
 
