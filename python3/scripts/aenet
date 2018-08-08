@@ -169,6 +169,23 @@ class AENET(object):
             plt.show()
 
         elif args.type == 'parity':
+            import glob
+            with open('energies.train', 'w') as f:
+                with open('energies.train.0') as tf:
+                    f.write(tf.read())
+                for ef in glob.glob('energies.train.[1-9]*'):
+                    with open(ef) as tf:
+                        lines = tf.readlines()
+                        f.write('\n'.join(lines[1:]))
+
+            with open('energies.test', 'w') as f:
+                with open('energies.test.0') as tf:
+                    f.write(tf.read())
+                for ef in glob.glob('energies.test.[1-9]*'):
+                    with open(ef) as tf:
+                        lines = tf.readlines()
+                        f.write('\n'.join(lines[1:]))
+
             train = pd.read_csv('energies.train', delim_whitespace=True)
             test = pd.read_csv('energies.test', delim_whitespace=True)
 
