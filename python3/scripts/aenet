@@ -169,15 +169,17 @@ class AENET(object):
             plt.show()
 
         elif args.type == 'parity':
-            train = pd.read_csv('energies.train.0', delim_whitespace=True)
-            test = pd.read_csv('energies.test.0', delim_whitespace=True)
+            train = pd.read_csv('energies.train', delim_whitespace=True)
+            test = pd.read_csv('energies.test', delim_whitespace=True)
 
-            train_err = (train['Ref(eV)'] - train['ANN(eV)']) / train['#atoms']
-            test_err = (test['Ref(eV)'] - test['ANN(eV)']) / test['#atoms']
+            train_err = (train['Ref(eV)'] - train['ANN(eV)']) #/ train['#atoms']
+            test_err = (test['Ref(eV)'] - test['ANN(eV)']) #/ test['#atoms']
 
             plt.subplot(3, 1, 1)
-            plt.plot(train['Ref(eV)'], train['ANN(eV)'], marker='.', alpha=0.5, linestyle=' ', color='DarkBlue')
-            plt.plot(test['Ref(eV)'], test['ANN(eV)'], marker='.',  alpha=0.5, linestyle=' ', color='Orange')
+            plt.plot(train['Ref(eV)'], train['ANN(eV)'], marker='.',
+                     alpha=0.5, linestyle=' ', color='DarkBlue')
+            plt.plot(test['Ref(eV)'], test['ANN(eV)'], marker='.',
+                     alpha=0.5, linestyle=' ', color='Orange')
             plt.plot([min([test['Ref(eV)'].min(), train['Ref(eV)'].min()]),
                       max([test['Ref(eV)'].max(), train['Ref(eV)'].max()])],
                      [min([test['Ref(eV)'].min(), train['Ref(eV)'].min()]),
@@ -191,8 +193,8 @@ class AENET(object):
             plt.hist(train_err)
             plt.hist(test_err)
             plt.xlabel('ΔE (eV/atom)')
-            plt.title(f"MAE train: {train_err.abs().mean():1.3f} Std: {train_err.std():1.3f}"
-                      f"\nMAE test: {test_err.abs().mean():1.3f} Std: {test_err.std():1.3f}")
+            plt.title(f"MAE train: {train_err.abs().mean():1.3f} Std: {train_err.std():1.3f} eV"
+                      f"\nMAE test: {test_err.abs().mean():1.3f} Std: {test_err.std():1.3f} eV")
             plt.legend(['train', 'test'])
 
 
